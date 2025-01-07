@@ -10,6 +10,46 @@ func GaussianBlur(img image.Image) *image.RGBA {
 	bounds := img.Bounds()
 	blurred := image.NewRGBA(bounds) //nouvelle image (la version flouté de l'input)
 
+	kernel := [3][3]float64{
+		{1, 2, 1},
+		{2, 4, 2},
+		{1, 2, 1},
+	}
+	kernelSum := 16.0
+
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			var r, g, b float64
+
+			// Appliquer le flou sur chaque pixel
+			for i := -1; i <= 1; i++ {
+				for j := -1; j <= 1; j++ {
+					px := clamp(x+i, bounds.Min.X, bounds.Max.X-1)
+					py := clamp(y+j, bounds.Min.Y, bounds.Max.Y-1)
+					srcColor := img.At(px, py)
+					rSrc, gSrc, bSrc, _ := srcColor.RGBA()
+					weight := kernel[i+1][j+1]
+					r += float64(rSrc) * weight
+					g += float64(gSrc) * weight
+					b += float64(bSrc) * weight
+				}
+			}
+
+			blurred.Set(x, y, color.RGBA{
+				R: uint8(r / kernelSum / 256),
+				G: uint8(g / kernelSum / 256),
+				B: uint8(b / kernelSum / 256),
+				A: uint8(255), // Garder l'opacité maximale
+			})
+		}
+	}
+	return blurred
+}
+
+func GaussianBlurSimple(img image.Image) *image.RGBA {
+	bounds := img.Bounds()
+	blurred := image.NewRGBA(bounds) //nouvelle image (la version flouté de l'input)
+
 	for x := bounds.Min.X; x < bounds.Max.X; x++ {
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 			var r, g, b float64
@@ -31,7 +71,6 @@ func GaussianBlur(img image.Image) *image.RGBA {
 				R: uint8(r / 9 / 256),
 				G: uint8(g / 9 / 256),
 				B: uint8(b / 9 / 256),
-				A: uint8(255), // Garder l'opacité maximale
 			})
 		}
 	}

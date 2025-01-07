@@ -24,7 +24,6 @@ func main() {
 
 	// Appliquer le flou simple
 	blurredImg := blur.GaussianBlur(img)
-
 	// Créer un fichier de sortie pour l'image floutée
 	outFile, err := os.Create("output.jpg") // Chemin pour l'image floutée
 	if err != nil {
