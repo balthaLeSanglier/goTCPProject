@@ -1,4 +1,3 @@
-// TODO
 package blur
 
 import (
@@ -6,6 +5,17 @@ import (
 	"image/color"
 )
 
+// Flou gaussien avec pondération appliqué à une section de l'image.
+//
+// utilise le multithreading, décrémente le WaitGroup de 1 une fois la fonction terminé
+//
+// Paramètres :
+//
+//	img *image.Image : l'image à envoyer
+//
+// Retourne :
+//
+//	*image.RGBA : image flouté
 func applyBlurSection(params BlurParams) {
 	defer params.waitGroup.Done()
 
@@ -44,6 +54,15 @@ func applyBlurSection(params BlurParams) {
 	}
 }
 
+// Flou gaussien de avec pondération
+//
+// Paramètres :
+//
+//	img *image.Image : l'image à envoyer
+//
+// Retourne :
+//
+//	*image.RGBA : image flouté
 func GaussianBlur(img image.Image) *image.RGBA {
 	bounds := img.Bounds()
 	blurred := image.NewRGBA(bounds) //nouvelle image (la version flouté de l'input)
@@ -84,6 +103,15 @@ func GaussianBlur(img image.Image) *image.RGBA {
 	return blurred
 }
 
+// Flou gaussien de base, sans pondération
+//
+// Paramètres :
+//
+//	img *image.Image : l'image à envoyer
+//
+// Retourne :
+//
+//	*image.RGBA : image flouté
 func GaussianBlurSimple(img image.Image) *image.RGBA {
 	bounds := img.Bounds()
 	blurred := image.NewRGBA(bounds) //nouvelle image (la version flouté de l'input)
@@ -115,6 +143,10 @@ func GaussianBlurSimple(img image.Image) *image.RGBA {
 	return blurred
 }
 
+// clamp limite une valeur à une plage donnée.
+// Si la valeur est inférieure au minimum, elle est fixée au minimum.
+// Si la valeur est supérieure au maximum, elle est fixée au maximum.
+// Sinon, la valeur reste inchangée.
 func clamp(value, min, max int) int {
 	if value < min {
 		return min
