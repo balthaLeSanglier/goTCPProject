@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt" // Importer le package pour le flou
 	"goTcpProjectServer/blur"
 	"image"
@@ -9,6 +10,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
 )
 
 // Initialise le serveur sur le port 8080. Accepte toutes les connexions entrantes et
@@ -45,7 +47,19 @@ func StartServer() {
 //	conn (net.Conn) : La connexion à traiter
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
-	fmt.Println("Connexion reçue, en attente de l'image...")
+
+	fmt.Println("Connexion reçue, en attente du nombre de goRoutine...")
+
+	var goRoutineNumber int32
+	goRoutineNumber, err := receiveGoRoutineNumber(conn)
+	if err != nil {
+		fmt.Println("Erreur lors de la réception du nombre de GoRoutine :", err)
+		return
+	}
+
+	fmt.Printf("Nombre de GoRoutine reçu : %d\n", goRoutineNumber)
+
+	fmt.Println("En attente de l'image...")
 
 	img, err := receiveImage(conn)
 	if err != nil {
@@ -54,12 +68,43 @@ func handleConnection(conn net.Conn) {
 	}
 
 	fmt.Println("Image reçue avec succès.")
-	blurred := blur.StartGaussianBlur(img, 4)
+	start := time.Now()
+	blurred := blur.StartGaussianBlur(img, int(goRoutineNumber))
+	elapsed := time.Since(start)
+	fmt.Println("Temps écoulé pendant le flou : ", elapsed)
 
 	err = sendImage(conn, blurred)
 	if err != nil {
 		fmt.Println("Erreur lors de l'envoi de l'image:", err)
 	}
+}
+
+// Décode les bytes envoyés par le client afin de retrouvé le nombre de goRoutine demandé par le client
+//
+// conn : La connexion TCP à partir de laquelle l'image est reçue (conn contient les octets envoyé par le client)
+//
+// Retourne :
+//   - le nombre de goRoutine.
+//   - Une erreur détaillant le problème si le décodage échoue.
+func receiveGoRoutineNumber(conn net.Conn) (int32, any) {
+	var goRoutineNumber int32
+	err := binary.Read(conn, binary.BigEndian, &goRoutineNumber)
+	return goRoutineNumber, err
+}
+
+// Décode les bytes envoyés par le client afin de reconstitué l'image
+//
+// conn : La connexion TCP à partir de laquelle l'image est reçue (conn contient les octets envoyé par le client)
+//
+// Retourne :
+//   - Une image décodée de type image.Image si le décodage est réussi.
+//   - Une erreur détaillant le problème si le décodage échoue.
+func receiveImage(conn net.Conn) (image.Image, error) {
+	img, _, err := image.Decode(conn)
+	if err != nil {
+		return nil, fmt.Errorf("échec du décodage de l'image : %v", err)
+	}
+	return img, nil
 }
 
 // sendImage encode une image au format JPEG et l'envoie via la connexion TCP.
@@ -78,19 +123,4 @@ func sendImage(conn net.Conn, img *image.RGBA) error {
 	fmt.Println("image envoyé")
 	fmt.Printf("Taille de l'image envoyée : %d octets\n", buf.Len())
 	return err
-}
-
-// Décode les bytes envoyés par le client afin
-//
-// conn : La connexion TCP à partir de laquelle l'image est reçue (conn contient les octets envoyé par le client)
-//
-// Retourne :
-//   - Une image décodée de type image.Image si le décodage est réussi.
-//   - Une erreur détaillant le problème si le décodage échoue.
-func receiveImage(conn net.Conn) (image.Image, error) {
-	img, _, err := image.Decode(conn)
-	if err != nil {
-		return nil, fmt.Errorf("échec du décodage de l'image : %v", err)
-	}
-	return img, nil
 }
