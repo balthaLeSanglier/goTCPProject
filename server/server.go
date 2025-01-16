@@ -57,6 +57,13 @@ func handleConnection(conn net.Conn) {
 		return
 	}
 
+	var Radius int32
+	Radius, err_radius := receiveRadius(conn)
+	if err_radius != nil {
+		fmt.Println("Erreur lors de la réception du rayon :", err)
+		return
+	}
+
 	fmt.Printf("Nombre de GoRoutine reçu : %d\n", goRoutineNumber)
 
 	fmt.Println("En attente de l'image...")
@@ -69,7 +76,7 @@ func handleConnection(conn net.Conn) {
 
 	fmt.Println("Image reçue avec succès.")
 	start := time.Now()
-	blurred := blur.StartGaussianBlur(img, int(goRoutineNumber))
+	blurred := blur.StartGaussianBlur(img, int(goRoutineNumber), int(Radius))
 	elapsed := time.Since(start)
 	fmt.Println("Temps écoulé pendant le flou : ", elapsed)
 
@@ -90,6 +97,14 @@ func receiveGoRoutineNumber(conn net.Conn) (int32, any) {
 	var goRoutineNumber int32
 	err := binary.Read(conn, binary.BigEndian, &goRoutineNumber)
 	return goRoutineNumber, err
+}
+
+// Similairement aux nombre de go routine, le rayon est aussi réccupéré
+
+func receiveRadius(conn net.Conn) (int32, any) {
+	var Radius int32
+	err := binary.Read(conn, binary.BigEndian, &Radius)
+	return Radius, err
 }
 
 // Décode les bytes envoyés par le client afin de reconstitué l'image
