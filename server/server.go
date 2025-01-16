@@ -6,7 +6,7 @@ import (
 	"fmt" // Importer le package pour le flou
 	"goTcpProjectServer/blur"
 	"image"
-	"image/jpeg"
+	"image/png"
 	"log"
 	"net"
 	"os"
@@ -107,7 +107,7 @@ func receiveImage(conn net.Conn) (image.Image, error) {
 	return img, nil
 }
 
-// sendImage encode une image au format JPEG et l'envoie via la connexion TCP.
+// sendImage encode une image au format PNG et l'envoie via la connexion TCP.
 //
 // Paramètres :
 //
@@ -115,7 +115,7 @@ func receiveImage(conn net.Conn) (image.Image, error) {
 //	img *image.RGBA : l'image à envoyer
 func sendImage(conn net.Conn, img *image.RGBA) error {
 	var buf bytes.Buffer
-	err := jpeg.Encode(&buf, img, nil)
+	err := png.Encode(&buf, img)
 	if err != nil {
 		return err
 	}
