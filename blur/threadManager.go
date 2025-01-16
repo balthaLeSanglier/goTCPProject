@@ -12,12 +12,13 @@ type BlurParams struct {
 	yStart    int
 	yEnd      int
 	waitGroup *sync.WaitGroup
+	radius    int
 }
 
 // Lance le traitement du flou gaussien sur toute l'image:
 //   - Calcul la longueur de bandes horizontal
 //   - Lance x thread pour calculer les flous sur les bandes
-func StartGaussianBlur(img image.Image, threadAmount int) *image.RGBA {
+func StartGaussianBlur(img image.Image, threadAmount int, radius int) *image.RGBA {
 	bounds := img.Bounds()
 	blurred := image.NewRGBA(bounds)
 	bandHeight := bounds.Max.Y / threadAmount
@@ -38,6 +39,7 @@ func StartGaussianBlur(img image.Image, threadAmount int) *image.RGBA {
 			yStart:    yStart,
 			yEnd:      yEnd,
 			waitGroup: &WaitGroup,
+			radius:    radius,
 		}
 		go applyBlurSection(params)
 	}
