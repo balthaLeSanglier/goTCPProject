@@ -3,7 +3,38 @@ package blur
 import (
 	"image"
 	"image/color"
+	"math"
 )
+
+// Générer dynamiquement un noyau gaussien en fonction du radius
+func generateGaussianKernel(radius int, dim int) [][]float64 {
+	kernel := make([][]float64, dim)
+	sigma := float64(radius) / 2.0 // Ajuste l'écart-type pour le flou
+	twoSigmaSq := 2 * sigma * sigma
+	center := radius
+
+	for i := 0; i < dim; i++ {
+		kernel[i] = make([]float64, dim)
+		for j := 0; j < dim; j++ {
+			x := float64(i - center)
+			y := float64(j - center)
+			kernel[i][j] = math.Exp(-(x*x+y*y)/twoSigmaSq) / (math.Pi * twoSigmaSq)
+		}
+	}
+
+	return kernel
+}
+
+// Calculer la somme des poids dans le noyau
+func sumKernel(kernel [][]float64) float64 {
+	sum := 0.0
+	for i := 0; i < len(kernel); i++ {
+		for j := 0; j < len(kernel[i]); j++ {
+			sum += kernel[i][j]
+		}
+	}
+	return sum
+}
 
 // Flou gaussien avec pondération appliqué à une section de l'image.
 //
@@ -19,12 +50,10 @@ import (
 func applyBlurSection(params BlurParams) {
 	defer params.waitGroup.Done()
 
-	// kernel := [3][3]float64{
-	// 	{1, 2, 1},
-	// 	{2, 4, 2},
-	// 	{1, 2, 1},
-	// }
-	kernelSum := float64((2.0*params.radius + 1.0) * (2.0*params.radius + 1.0))
+	// Dimension du noyau
+	dim := 2*params.radius + 1
+	kernel := generateGaussianKernel(params.radius, dim)
+	kernelSum := sumKernel(kernel)
 
 	for x := params.bounds.Min.X; x < params.bounds.Max.X; x++ {
 		for y := params.yStart; y < params.yEnd; y++ {
@@ -37,10 +66,10 @@ func applyBlurSection(params BlurParams) {
 					py := clamp(y+j, params.bounds.Min.Y, params.bounds.Max.Y-1)
 					srcColor := params.img.At(px, py)
 					rSrc, gSrc, bSrc, _ := srcColor.RGBA()
-					//weight := kernel[i+1][j+1]
-					r += float64(rSrc) // * weight
-					g += float64(gSrc) // * weight
-					b += float64(bSrc) // * weight
+					weight := kernel[i+params.radius][j+params.radius]
+					r += float64(rSrc) * weight
+					g += float64(gSrc) * weight
+					b += float64(bSrc) * weight
 				}
 			}
 
